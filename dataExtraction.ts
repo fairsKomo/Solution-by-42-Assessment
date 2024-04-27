@@ -178,7 +178,6 @@ export async function insertIntoDB(database: Database, data: any) {
 
         
         const count: number = insertions(data);
-        console.log(`${count} record was inserted succefully!`);
     } catch (error) {
         console.error("Error inserting data:", error);
         // Handle error as per your requirement

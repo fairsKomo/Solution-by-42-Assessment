@@ -34,9 +34,13 @@ app.post('/process', upload.single('file'), (req:Request, res:Response)=>{
     const elapsedTimeInSeconds = endTime[0] + endTime[1] / 1e9;
 
     const response = retrieveCounts(db);
-    response.totalTime = elapsedTimeInSeconds;
+    if(response){
+      response.totalTime = elapsedTimeInSeconds;
+      res.send(response);
+    } else{
+      res.send("An error occured!");
+    }
     console.log(response);
-    res.send(response);
   })
   .catch((error) => {
     console.error('Error processing CSV:', error);
