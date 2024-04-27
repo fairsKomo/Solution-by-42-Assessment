@@ -1,6 +1,6 @@
 import express, {Request, Response} from "express";
 import multer from "multer";
-import {processCSV, createTables, insertIntoDB} from "./dataExtraction.ts";
+import {processCSV, createTables, insertIntoDB, retrieveCounts} from "./dataExtraction.ts";
 import {Database} from "bun:sqlite";
 
 
@@ -21,19 +21,26 @@ app.post('/process', upload.single('file'), (req:Request, res:Response)=>{
 
   const csvFile = req.file;
   const csvFilePath = `./uploads/${csvFile.filename}`;
+
+  const startTime = process.hrtime();
+
   processCSV(csvFilePath)
   .then((data) => {
     const db = new Database('myDatabase.sqlite');
     createTables(db);
-    console.log(data.newLicenseRequest);
-    
     insertIntoDB(db, data)
+
+    const endTime = process.hrtime(startTime);
+    const elapsedTimeInSeconds = endTime[0] + endTime[1] / 1e9;
+
+    const response = retrieveCounts(db);
+    response.totalTime = elapsedTimeInSeconds;
+    console.log(response);
+    res.send(response);
   })
   .catch((error) => {
     console.error('Error processing CSV:', error);
-  });
-  res.send("File uploaded successfully!");
-    
+  });    
 })
 
 app.listen(port, ()=>{

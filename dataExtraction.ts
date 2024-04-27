@@ -5,55 +5,82 @@ import * as validate from './zodvalidation';
 import type { ZodError } from "zod";
 
 
+export function getRecordCount(tableName: any, db: Database) {
+    
+    const query = `SELECT count(*) FROM ${tableName}`;
+    const results : any= dbb.query(query).all();
+    return results[0]["count(*)"];
+};
+
+export function retrieveCounts(db: Database){
+
+    try {
+        const tableRecords = {
+            newLicenseRequest: getRecordCount('NewLicenseRequest', db),
+            accountRequest: getRecordCount('AccountRequest', db),
+            inspectionRequest: getRecordCount('InspectionRequest', db),
+            addNewActivityRequest: getRecordCount('AddNewActivityRequest', db),
+            stampLicenseLetterRequest: getRecordCount('StampLicenseLetterRequest', db),
+            totalTime: 0,
+        };
+
+        return tableRecords;
+    } catch (error) {
+        console.error('Error fetching table records:', error);
+    }
+
+};
+
+
 export function createTables(db: Database){
 
     db.run(`CREATE TABLE IF NOT EXISTS NewLicenseRequest (
-        RequestID INTEGER PRIMARY KEY,
-        RequestStatus INTEGER,
-        CompanyName TEXT,
-        LicenceType TEXT,
-        IsOffice INTEGER,
-        OfficeName TEXT,
-        OfficeServiceNumber TEXT,
-        RequestDate TEXT,
-        Activities TEXT
-      )`);
-    
-      db.run(`CREATE TABLE IF NOT EXISTS AccountRequest (
-        RequestID INTEGER PRIMARY KEY,
-        RequestStatus INTEGER,
-        CompanyName TEXT,
-        RequesterName TEXT,
-        ApplicantName TEXT,
-        UserName TEXT,
-        ContactEmail TEXT,
-        Permissions TEXT
-      )`);
-    
-      db.run(`CREATE TABLE IF NOT EXISTS InspectionRequest (
-        RequestID INTEGER PRIMARY KEY,
-        RequestStatus INTEGER,
-        CompanyName TEXT,
-        InspectionDate TEXT,
-        InspectionTime TEXT,
-        InspectionType TEXT
-      )`);
-    
-      db.run(`CREATE TABLE IF NOT EXISTS AddNewActivityRequest (
-        RequestID INTEGER PRIMARY KEY,
-        RequestStatus INTEGER,
-        CompanyName TEXT,
-        LicenceID TEXT,
-        Activities TEXT
-      )`);
-    
-      db.run(`CREATE TABLE IF NOT EXISTS StampLicenseLetterRequest (
-        RequestID INTEGER PRIMARY KEY,
-        RequestStatus INTEGER,
-        CompanyName TEXT,
-        LicenceID TEXT,
-        RequestDate TEXT
-      )`);
+      RequestID TEXT PRIMARY KEY,
+      RequestStatus TEXT,
+      CompanyName TEXT,
+      LicenceType TEXT,
+      IsOffice TEXT,
+      OfficeName TEXT,
+      OfficeServiceNumber TEXT,
+      RequestDate TEXT,
+      Activities TEXT
+    )`);
+  
+    db.run(`CREATE TABLE IF NOT EXISTS AccountRequest (
+      RequestID TEXT PRIMARY KEY,
+      RequestStatus TEXT,
+      CompanyName TEXT,
+      RequesterName TEXT,
+      ApplicantName TEXT,
+      UserName TEXT,
+      ContactEmail TEXT,
+      Permissions TEXT
+    )`);
+  
+    db.run(`CREATE TABLE IF NOT EXISTS InspectionRequest (
+      RequestID TEXT PRIMARY KEY,
+      RequestStatus TEXT,
+      CompanyName TEXT,
+      InspectionDate TEXT,
+      InspectionTime TEXT,
+      InspectionType TEXT
+    )`);
+  
+    db.run(`CREATE TABLE IF NOT EXISTS AddNewActivityRequest (
+      RequestID TEXT PRIMARY KEY,
+      RequestStatus TEXT,
+      CompanyName TEXT,
+      LicenceID TEXT,
+      Activities TEXT
+    )`);
+  
+    db.run(`CREATE TABLE IF NOT EXISTS StampLicenseLetterRequest (
+      RequestID TEXT PRIMARY KEY,
+      RequestStatus TEXT,
+      CompanyName TEXT,
+      LicenceID TEXT,
+      RequestDate TEXT
+    )`);
 }
 
 
@@ -100,7 +127,7 @@ export async function insertIntoDB(database: Database, data: any) {
                     request.RequestData.OfficeName,
                     request.RequestData.OfficeServiceNumber,
                     request.RequestData.RequestDate,
-                    request.RequestData.Activities,
+                    request.RequestData.Activities
                 );
             }
     
@@ -154,6 +181,7 @@ export async function insertIntoDB(database: Database, data: any) {
         console.log(`${count} record was inserted succefully!`);
     } catch (error) {
         console.error("Error inserting data:", error);
+        // Handle error as per your requirement
     }
 } 
 
@@ -224,3 +252,4 @@ export async function processCSV(csvFilePath: string): Promise<any> {
         });
 });
 }
+const dbb = new Database('myDatabase.sqlite');
