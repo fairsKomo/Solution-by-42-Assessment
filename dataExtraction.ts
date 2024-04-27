@@ -2,13 +2,11 @@ import {Database} from "bun:sqlite";
 import fs from 'fs';
 import csvParser from 'csv-parser';
 import * as validate from './zodvalidation';
-import type { ZodError } from "zod";
-
 
 export function getRecordCount(tableName: any, db: Database) {
     
     const query = `SELECT count(*) FROM ${tableName}`;
-    const results : any= dbb.query(query).all();
+    const results : any= db.query(query).all();
     return results[0]["count(*)"];
 };
 
@@ -251,4 +249,3 @@ export async function processCSV(csvFilePath: string): Promise<any> {
         });
 });
 }
-const dbb = new Database('myDatabase.sqlite');

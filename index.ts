@@ -38,7 +38,7 @@ app.post('/process', upload.single('file'), (req:Request, res:Response)=>{
       response.totalTime = elapsedTimeInSeconds;
       res.send(response);
     } else{
-      res.send("An error occured!");
+      res.send("An error occuerd!!");
     }
     console.log(response);
   })
