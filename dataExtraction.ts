@@ -1,56 +1,59 @@
 import {Database} from "bun:sqlite";
 import fs from 'fs';
 import csvParser from 'csv-parser';
+import * as validate from './zodvalidation';
+import type { ZodError } from "zod";
+
 
 export function createTables(db: Database){
 
     db.run(`CREATE TABLE IF NOT EXISTS NewLicenseRequest (
-      RequestID TEXT PRIMARY KEY,
-      RequestStatus TEXT,
-      CompanyName TEXT,
-      LicenceType TEXT,
-      IsOffice TEXT,
-      OfficeName TEXT,
-      OfficeServiceNumber TEXT,
-      RequestDate TEXT,
-      Activities TEXT
-    )`);
-  
-    db.run(`CREATE TABLE IF NOT EXISTS AccountRequest (
-      RequestID TEXT PRIMARY KEY,
-      RequestStatus TEXT,
-      CompanyName TEXT,
-      RequesterName TEXT,
-      ApplicantName TEXT,
-      UserName TEXT,
-      ContactEmail TEXT,
-      Permissions TEXT
-    )`);
-  
-    db.run(`CREATE TABLE IF NOT EXISTS InspectionRequest (
-      RequestID TEXT PRIMARY KEY,
-      RequestStatus TEXT,
-      CompanyName TEXT,
-      InspectionDate TEXT,
-      InspectionTime TEXT,
-      InspectionType TEXT
-    )`);
-  
-    db.run(`CREATE TABLE IF NOT EXISTS AddNewActivityRequest (
-      RequestID TEXT PRIMARY KEY,
-      RequestStatus TEXT,
-      CompanyName TEXT,
-      LicenceID TEXT,
-      Activities TEXT
-    )`);
-  
-    db.run(`CREATE TABLE IF NOT EXISTS StampLicenseLetterRequest (
-      RequestID TEXT PRIMARY KEY,
-      RequestStatus TEXT,
-      CompanyName TEXT,
-      LicenceID TEXT,
-      RequestDate TEXT
-    )`);
+        RequestID INTEGER PRIMARY KEY,
+        RequestStatus INTEGER,
+        CompanyName TEXT,
+        LicenceType TEXT,
+        IsOffice INTEGER,
+        OfficeName TEXT,
+        OfficeServiceNumber TEXT,
+        RequestDate TEXT,
+        Activities TEXT
+      )`);
+    
+      db.run(`CREATE TABLE IF NOT EXISTS AccountRequest (
+        RequestID INTEGER PRIMARY KEY,
+        RequestStatus INTEGER,
+        CompanyName TEXT,
+        RequesterName TEXT,
+        ApplicantName TEXT,
+        UserName TEXT,
+        ContactEmail TEXT,
+        Permissions TEXT
+      )`);
+    
+      db.run(`CREATE TABLE IF NOT EXISTS InspectionRequest (
+        RequestID INTEGER PRIMARY KEY,
+        RequestStatus INTEGER,
+        CompanyName TEXT,
+        InspectionDate TEXT,
+        InspectionTime TEXT,
+        InspectionType TEXT
+      )`);
+    
+      db.run(`CREATE TABLE IF NOT EXISTS AddNewActivityRequest (
+        RequestID INTEGER PRIMARY KEY,
+        RequestStatus INTEGER,
+        CompanyName TEXT,
+        LicenceID TEXT,
+        Activities TEXT
+      )`);
+    
+      db.run(`CREATE TABLE IF NOT EXISTS StampLicenseLetterRequest (
+        RequestID INTEGER PRIMARY KEY,
+        RequestStatus INTEGER,
+        CompanyName TEXT,
+        LicenceID TEXT,
+        RequestDate TEXT
+      )`);
 }
 
 
@@ -97,7 +100,7 @@ export async function insertIntoDB(database: Database, data: any) {
                     request.RequestData.OfficeName,
                     request.RequestData.OfficeServiceNumber,
                     request.RequestData.RequestDate,
-                    request.RequestData.Activities
+                    request.RequestData.Activities,
                 );
             }
     
@@ -151,7 +154,6 @@ export async function insertIntoDB(database: Database, data: any) {
         console.log(`${count} record was inserted succefully!`);
     } catch (error) {
         console.error("Error inserting data:", error);
-        // Handle error as per your requirement
     }
 } 
 
@@ -166,41 +168,59 @@ export async function processCSV(csvFilePath: string): Promise<any> {
       };
 
       fs.createReadStream(csvFilePath)
-          .pipe(csvParser())
-          .on('data', (rowData: any) => {
-              const { RequestID, RequestType, RequestStatus, RequestData } = rowData;
-              const requestData = JSON.parse(RequestData);
-              const rowDataObj = {
-                  RequestID,
-                  RequestStatus,
-                  RequestData: requestData
-              };
+        .pipe(csvParser())
+        .on('data', (rowData: any) => {
+            const { RequestID, RequestType, RequestStatus, RequestData } = rowData;
+            const requestData = JSON.parse(RequestData);
+            const rowDataObj = {
+                RequestID,
+                RequestStatus,
+                RequestData: requestData
+            };
+                
+            
+            try{
+                switch (RequestType) {
+                    case '1':
+                        if (validate.validateLicense(rowDataObj)) {
+                            categorizedData.newLicenseRequest.push(rowDataObj);
+                        }
+                        break;
+                    case '2':
+                        if (validate.validateAccount(rowDataObj)) {
+                            categorizedData.accountRequest.push(rowDataObj);
+                        }
+                        break;
+                    case '3':
+                        if (validate.validateInspection(rowDataObj)) {
+                            categorizedData.inspectionRequest.push(rowDataObj);
+                        }
+                        break;
+                    case '4':
+                        if (validate.validateAddNewActivity(rowDataObj)) {
+                            categorizedData.addNewActivityRequest.push(rowDataObj);
+                        }
+                        break;
+                    case '5':
+                        if (validate.validateStampLicenseLetter(rowDataObj)) {
+                            categorizedData.stampLicenseLetterRequest.push(rowDataObj);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            } catch(error: any){
+                console.log("Improper format of data", error.message);
+                
+            }
 
-              switch (RequestType) {
-                  case '1':
-                      categorizedData.newLicenseRequest.push(rowDataObj);
-                      break;
-                  case '2':
-                      categorizedData.accountRequest.push(rowDataObj);
-                      break;
-                  case '3':
-                      categorizedData.inspectionRequest.push(rowDataObj);
-                      break;
-                  case '4':
-                      categorizedData.addNewActivityRequest.push(rowDataObj);
-                      break;
-                  case '5':
-                      categorizedData.stampLicenseLetterRequest.push(rowDataObj);
-                      break;
-                  default:
-                      break;
-              }
-          })
-          .on('end', () => {
-              resolve(categorizedData);
-          })
-          .on('error', (error: any) => {
-              reject(error);
-          });
-  });
+        })
+        .on('end', () => {
+            resolve(categorizedData);
+        })
+        .on('error', (error: any) => {
+            console.error("Error reading CSV file:", error);
+            reject(error); // Reject the Promise with the error
+        });
+});
 }

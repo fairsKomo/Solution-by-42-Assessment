@@ -25,7 +25,7 @@ app.post('/process', upload.single('file'), (req:Request, res:Response)=>{
   .then((data) => {
     const db = new Database('myDatabase.sqlite');
     createTables(db);
-    // console.log(data.addNewActivityRequest);
+    console.log(data.newLicenseRequest);
     
     insertIntoDB(db, data)
   })
